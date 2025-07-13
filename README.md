@@ -20,7 +20,7 @@ pip install .
 
 ### Dependencies
 
-The required Python packages will be installed automatically. However, the tool also relies on a `spacy` model, which needs to be downloaded separately.
+The required Python packages will be installed automatically. However, the tool also relies on `scispacy` model, which needs to be downloaded separately.
 
 ```bash
 pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_sm-0.5.4.tar.gz
@@ -61,7 +61,7 @@ The `epmc-cli` tool provides a command-line interface for the Europe PMC API and
 
 *   **Search for articles:**
     ```bash
-    epmc-cli articles search "machine learning" --page-size 1
+    epmc-cli articles search "BRCA1" --page-size 1
     ```
 *   **Get article metadata:**
     ```bash
