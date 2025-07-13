@@ -13,7 +13,7 @@
 To install the package, clone the repository and install it using pip:
 
 ```bash
-git clone https://github.com/your-username/epmc-tools.git
+git clone https://github.com/ML4LitS/epmc-tools.git
 cd epmc-tools
 pip install .
 ```

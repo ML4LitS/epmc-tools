@@ -7,7 +7,20 @@ from .section_maps import (
 )
 
 class XMLProcessor:
+    """
+    A class to process JATS XML content.
+
+    This processor handles the parsing of JATS XML, cleaning, structuring the
+    content into sections, and optionally splitting text into sentences.
+    """
     def __init__(self, sentenciser=True):
+        """
+        Initializes the XMLProcessor.
+
+        :param sentenciser: If True, enables sentence splitting using a
+                            spaCy model. Defaults to True.
+        :type sentenciser: bool
+        """
         self.sentenciser = sentenciser
         if sentenciser:
             self.nlp = spacy.load("en_core_sci_sm", disable=["parser", "ner", "tagger", "lemmatizer"])
