@@ -6,9 +6,9 @@ To install the package, clone the repository and install it using pip:
 
 .. code-block:: bash
 
-   git clone https://github.com/your-username/JATX2JSON.git
-   cd JATX2JSON
-   pip install ./epmc-tools
+   git clone https://github.com/ML4LitS/epmc-tools.git
+   cd epmc-tools
+   pip install .
 
 Dependencies
 ------------
@@ -22,8 +22,8 @@ The required Python packages will be installed automatically. However, the tool 
 Editable Mode
 -------------
 
-If you are developing the package, you may want to install it in editable mode:
+If you are developing the package, you may want to install it in editable mode from the root of the project directory:
 
 .. code-block:: bash
 
-   pip install -e ./jatx2json_pkg
+   pip install -e .
