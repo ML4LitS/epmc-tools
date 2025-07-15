@@ -187,13 +187,14 @@ class XMLProcessor:
                 content_units = self.call_sentence_tags(sec_tag)
                 
                 if self.accessions:
+                    sentences_with_accessions = []
                     for sentence in content_units:
-                        extracted_from_sec = extract_with_spacy(self.nlp, sentence, section=sec_type)
-                        if extracted_from_sec:
-                            all_extracted_accessions.extend(extracted_from_sec)
-                            # Only add sentences with accession numbers
-                            if sentence not in sections[sec_type]:
-                                sections[sec_type].append(sentence)
+                        extraction_result = extract_with_spacy(self.nlp, sentence, section=sec_type)
+                        if extraction_result:
+                            all_extracted_accessions.append(extraction_result)
+                            if sentence not in sentences_with_accessions:
+                                sentences_with_accessions.append(sentence)
+                    sections[sec_type].extend(sentences_with_accessions)
                 else:
                     sections[sec_type].extend(content_units)
 

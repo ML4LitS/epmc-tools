@@ -5,6 +5,8 @@ __pycache__/
 
 # C extensions
 *.so
+*.json
+*.env
 
 # Distribution / packaging
 .Python
@@ -122,3 +124,4 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+working/

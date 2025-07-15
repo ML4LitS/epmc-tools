@@ -44,17 +44,28 @@ The `epmc-cli` tool provides a command-line interface for the Europe PMC API and
 
 #### Local Commands
 
-*   **Convert JATS XML to JSON (with sentence splitting by default):**
+The `local` commands process files on your machine or from the web.
+
+*   **Convert JATS XML to JSON:**
+    The `jats2json` command can intelligently handle a local file path, a URL, or a PMCID.
+
+    *From a local file:*
     ```bash
     epmc-cli local jats2json test_data/PXD053361.xml output.json
     ```
-*   **Convert JATS XML to JSON (without sentence splitting):**
+    *From a PMCID:*
     ```bash
-    epmc-cli local jats2json test_data/PXD053361.xml output.json --no-sentenciser
+    epmc-cli local jats2json PMC11704132 output.json
     ```
-*   **Extract accession numbers:**
+    *From a URL (with sentence splitting disabled):*
     ```bash
-    epmc-cli local extract-accessions output.json accessions.json
+    epmc-cli local jats2json https://some-url/article.xml output.json --no-sentenciser
+    ```
+
+*   **Extract accession numbers:**
+    This command processes the JSON file created by `jats2json`.
+    ```bash
+    epmc-cli local extract-accessions-resources output.json accessions.json
     ```
 
 #### API Commands
@@ -78,34 +89,56 @@ For more detailed usage instructions, please refer to the [documentation](https:
 
 The core components of `europmc-dev-tool` can be imported and used directly in your Python scripts. This allows for greater flexibility and integration into your own custom workflows.
 
+A full example can be found in `script_usage_example.py`, which shows how to build a robust pipeline. Here is a simplified version:
+
 ```python
 import json
+import os
+import requests
 import spacy
 from europmc_dev_tool.api.articles import ArticlesClient
 from europmc_dev_tool.jats_processor import XMLProcessor
 from europmc_dev_tool.section_maps import ordered_labels
 from europmc_dev_tool.spacy_extractor import extract_with_spacy
 
-# 1. Fetch an article from Europe PMC
-articles_client = ArticlesClient(email="your.email@example.com")
-full_text_xml = articles_client.get_fulltext_xml("PMC11704132")
+def get_xml_content(identifier):
+    """
+    Intelligently fetches JATS XML content from a PMCID, URL, or local file.
+    """
+    if identifier.startswith('http'):
+        response = requests.get(identifier)
+        response.raise_for_status()
+        return response.text
+    elif os.path.exists(identifier):
+        with open(identifier, 'r') as f:
+            return f.read()
+    elif identifier.upper().startswith('PMC'):
+        articles_client = ArticlesClient()
+        return articles_client.get_fulltext_xml(identifier)
+    else:
+        raise ValueError("Input is not a valid file path, URL, or PMCID.")
 
-# 2. Process the JATS XML to JSON
-processor = XMLProcessor()
-processed_data = processor.process_full_text(full_text_xml)
-final_json = processor.process_json(processed_data, ordered_labels)
+# 1. Fetch content (example with a PMCID)
+xml_content = get_xml_content("PMC11704132")
 
-# 3. Extract accession numbers
-nlp = spacy.load("en_core_sci_sm")
-all_extractions = []
-for section, sentences in final_json.get('sections', {}).items():
-    for sentence in sentences:
-        text = sentence.get('text', '')
-        extractions = extract_with_spacy(nlp, text, section)
-        if extractions:
-            all_extractions.extend(extractions)
+if xml_content:
+    # 2. Process the JATS XML to JSON
+    processor = XMLProcessor()
+    processed_data = processor.process_full_text(xml_content)
+    final_json = processor.process_json(processed_data, ordered_labels)
 
-print(json.dumps(all_extractions, indent=2))
+    # 3. Extract accession numbers and resources
+    nlp = spacy.load("en_core_sci_sm")
+    all_extractions = []
+    for section, sentences in final_json.get('sections', {}).items():
+        for sentence in sentences:
+            text = sentence.get('text', '')
+            sentence_id = sentence.get('sentence_id')
+            extractions = extract_with_spacy(nlp, text, section, sentence_id)
+            if extractions:
+                all_extractions.extend(extractions)
+
+    print(json.dumps(all_extractions, indent=2))
 ```
 
 For more detailed usage instructions, please refer to the [documentation](https://epmc-tools.readthedocs.io/en/latest/).

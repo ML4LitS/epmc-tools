@@ -196,7 +196,7 @@ class XMLProcessor:
         sent_id = 1
         for section in ordered_json.values():
             for entry in section:
-                entry["sent_id"] = sent_id
+                entry["sentence_id"] = sent_id
                 sent_id += 1
 
         combined_data = {

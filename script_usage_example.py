@@ -4,42 +4,52 @@ as a library in your own Python scripts.
 """
 
 import json
+import os
+import requests
 import spacy
 from europmc_dev_tool.api.articles import ArticlesClient
 from europmc_dev_tool.jats_processor import XMLProcessor
 from europmc_dev_tool.section_maps import ordered_labels
 from europmc_dev_tool.spacy_extractor import extract_with_spacy
 
-def run_api_examples():
-    """Demonstrates how to use the API clients."""
-    print("--- Running API Client Examples ---")
+
+def get_xml_content(identifier):
+    """
+    Intelligently fetches JATS XML content from a PMCID, URL, or local file.
+
+    :param identifier: A PMCID (e.g., "PMC12345"), a URL, or a local file path.
+    :type identifier: str
+    :return: The XML content as a string, or None if fetching fails.
+    :rtype: str or None
+    """
+    xml_content = None
+    try:
+        if identifier.startswith('http://') or identifier.startswith('https://'):
+            print(f"Identifier recognized as URL: {identifier}")
+            response = requests.get(identifier)
+            response.raise_for_status()  # Raises HTTPError for bad responses
+            xml_content = response.text
+        elif os.path.exists(identifier):
+            print(f"Identifier recognized as local file: {identifier}")
+            with open(identifier, 'r') as f:
+                xml_content = f.read()
+        elif identifier.upper().startswith('PMC'):
+            print(f"Identifier recognized as PMCID: {identifier}")
+            articles_client = ArticlesClient()
+            xml_content = articles_client.get_fulltext_xml(identifier)
+            if not xml_content:
+                raise ValueError(f"Could not retrieve XML for PMCID {identifier}.")
+        else:
+            raise FileNotFoundError(f"Identifier '{identifier}' is not a valid file path, URL, or PMCID.")
+    except (requests.exceptions.RequestException, FileNotFoundError, ValueError) as e:
+        print(f"Error: {e}")
+        return None
     
-    # Instantiate the client. You can provide your email for better API etiquette.
-    articles_client = ArticlesClient(email="your.email@example.com")
-
-    # 1. Search for articles
-    print("\n1. Searching for articles matching 'crispr'...")
-    search_results = articles_client.search("crispr", page_size=5)
-    print(f"Found {search_results.get('hitCount')} articles.")
-    if search_results.get('resultList', {}).get('result'):
-        first_article_id = search_results['resultList']['result'][0]['id']
-        print(f"ID of the first article: {first_article_id}")
-
-    # 2. Get metadata for a specific article
-    print("\n2. Fetching metadata for article 'PMC11704132'...")
-    article_data = articles_client.get_article(source="PMC", article_id="PMC11704132")
-    print(f"Successfully fetched. Title: {article_data.get('result', {}).get('title')}")
-
-    # 3. Get the full-text XML for an article
-    print("\n3. Fetching full-text XML for article 'PMC11704132'...")
-    full_text_xml = articles_client.get_fulltext_xml("PMC11704132")
-    print("Full-text XML received (first 200 chars):")
-    print(full_text_xml[:200] + "...")
-    print("-" * 35)
-    return full_text_xml
+    print("Successfully fetched XML content.")
+    return xml_content
 
 
-def run_local_processing_examples(xml_content):
+def run_processing_pipeline(xml_content, offline=False):
     """Demonstrates JATS processing and accession number extraction."""
     print("\n--- Running Local Processing Examples ---")
 
@@ -49,13 +59,17 @@ def run_local_processing_examples(xml_content):
     processed_data = processor.process_full_text(xml_content)
     final_json = processor.process_json(processed_data, ordered_labels)
     
+    if not final_json:
+        print("Processing failed to produce JSON. Aborting.")
+        return
+
     # Save the intermediate JSON to a file (optional)
     with open("example_output.json", "w") as f:
         json.dump(final_json, f, indent=2)
     print("Processed JSON has been saved to 'example_output.json'")
 
-    # 2. Extract accession numbers from the JSON content
-    print("\n2. Extracting accession numbers...")
+    # 2. Extract accession numbers and resources from the JSON content
+    print("\n2. Extracting accession numbers and resources...")
     
     # Load the required spaCy model
     try:
@@ -70,12 +84,13 @@ def run_local_processing_examples(xml_content):
     for section, sentences in final_json.get('sections', {}).items():
         for sentence in sentences:
             text = sentence.get('text', '')
+            sentence_id = sentence.get('sentence_id')
             # Call the extraction function
-            extractions = extract_with_spacy(nlp, text, section)
+            extractions = extract_with_spacy(nlp, text, section, sentence_id, offline=offline)
             if extractions:
                 all_extractions.extend(extractions)
 
-    print(f"Found {len(all_extractions)} accession numbers.")
+    print(f"Found {len(all_extractions)} accession numbers and resources.")
     if all_extractions:
         print("Example of extracted data:")
         print(json.dumps(all_extractions[0], indent=2))
@@ -83,21 +98,28 @@ def run_local_processing_examples(xml_content):
     # Save the extractions to a file (optional)
     with open("example_accessions.json", "w") as f:
         json.dump(all_extractions, f, indent=2)
-    print("Extracted accession numbers saved to 'example_accessions.json'")
+    print("Extracted accession numbers and resources saved to 'example_accessions.json'")
     print("-" * 35)
 
 
 if __name__ == "__main__":
-    # Run the API examples and get the XML content
-    xml_from_api = run_api_examples()
+    # --- Example with a PMCID ---
+    print("--- Running example with PMCID: PMC11704132 ---")
+    pmcid_content = get_xml_content("PMC11704132")
+    if pmcid_content:
+        run_processing_pipeline(pmcid_content)
 
-    # Use the fetched XML to run the local processing examples
-    if xml_from_api:
-        run_local_processing_examples(xml_from_api)
-
-    # You can also process a local file directly
-    # print("\n--- Processing a local XML file ---")
-    # with open("test_data/PXD053361.xml", "r") as f:
-    #     local_xml_content = f.read()
-    # run_local_processing_examples(local_xml_content)
+    # --- Example with a local file ---
+    # Note: Assumes 'test_data/PXD053361.xml' exists.
+    print("\n--- Running example with local file: test_data/PXD053361.xml ---")
+    local_file_content = get_xml_content("test_data/PXD053361.xml")
+    if local_file_content:
+        run_processing_pipeline(local_file_content)
+        
+    # --- Example with a URL ---
+    # print("\n--- Running example with URL ---")
+    # url = "https://www.ebi.ac.uk/europepmc/webservices/rest/PMC11704132/fullTextXML"
+    # url_content = get_xml_content(url)
+    # if url_content:
+    #     run_processing_pipeline(url_content)
 

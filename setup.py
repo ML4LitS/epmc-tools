@@ -23,10 +23,10 @@ setup(
     },
     author="Santosh Tirunagari",
     author_email="tsantosh7@gmail.com",
-    description="A tool to extract structured JSON from JATS XML, with a focus on accession numbers.",
+    description="A versatile toolkit for processing JATS XML, extracting accession numbers and resources, and interacting with the Europe PMC API.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/JATX2JSON",
+    url="https://github.com/ML4LitS/epmc-tools",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

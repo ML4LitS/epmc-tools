@@ -29,8 +29,8 @@ JATS Processor
 .. automodule:: europmc_dev_tool.jats_processor
    :members:
 
-Accession Number Extractor
---------------------------
+Accession Number and Resource Extractor
+---------------------------------------
 
 .. automodule:: europmc_dev_tool.spacy_extractor
    :members:

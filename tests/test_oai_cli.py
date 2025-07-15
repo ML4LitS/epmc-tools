@@ -5,7 +5,7 @@ import unittest
 def run_command(command):
     """Runs a command and returns the output."""
     try:
-        result = subprocess.run(command, capture_output=True, text=True, shell=True, timeout=60)
+        result = subprocess.run(command, capture_output=True, text=True, shell=True, timeout=120)
         return result
     except subprocess.TimeoutExpired:
         print(f"Command timed out: {command}")
@@ -16,7 +16,7 @@ class TestOaiCli(unittest.TestCase):
     def test_oai_harvest(self):
         """Tests the oai harvest command."""
         print("Testing oai harvest...")
-        command = "/home/stirunag/environments/envs/env_jats2json/bin/python -m europmc_dev_tool.cli oai harvest --metadata-prefix oai_dc"
+        command = "/home/stirunag/environments/envs/env_jats2json/bin/python -m europmc_dev_tool.cli oai harvest --verb ListIdentifiers --metadata-prefix oai_dc"
         result = run_command(command)
         self.assertIsNotNone(result)
         self.assertEqual(result.returncode, 0)

@@ -23,7 +23,7 @@ class TestEpmcCli(unittest.TestCase):
     def test_epmc_cli_get(self):
         """Tests the epmc-cli get command."""
         print("Testing epmc-cli (get)...")
-        command = "/home/stirunag/environments/envs/env_jats2json/bin/python -m europmc_dev_tool.cli articles get PMC 11704132"
+        command = "/home/stirunag/environments/envs/env_jats2json/bin/python -m europmc_dev_tool.cli articles get PMC11704132"
         result = run_command(command)
         self.assertEqual(result.returncode, 0)
         data = json.loads(result.stdout)
